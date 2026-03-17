@@ -10,15 +10,16 @@ body {
   background:#000;
   overflow:hidden;
   width:100vw; height:100vh;
+  display:flex; justify-content:center; align-items:center;
   font-family:'Courier New',monospace; color:#fff;
-  position:relative;
 }
 canvas { display:block; }
 
 #game-container {
-  position:absolute;
+  position:relative;
   width:620px; height:700px;
-  transform-origin:0 0;
+  flex-shrink:0;
+  transform-origin:center center;
 }
 
 /* ── HUD ── */
@@ -106,6 +107,7 @@ canvas { display:block; }
   text-shadow:0 0 8px #0af;
   position:relative; overflow:hidden;
   transition:color 0.2s, border-color 0.2s;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
 }
 .btn::before {
   content:''; position:absolute; inset:0;
@@ -274,10 +276,11 @@ canvas { display:block; }
 const gameContainer = document.getElementById('game-container');
 
 function scaleGame() {
-  const scale = Math.min(window.innerWidth / 620, window.innerHeight / 700, 1);
-  gameContainer.style.transform = `scale(${scale})`;
-  gameContainer.style.left = ((window.innerWidth  - 620 * scale) / 2) + 'px';
-  gameContainer.style.top  = ((window.innerHeight - 700 * scale) / 2) + 'px';
+  const s = Math.min(window.innerWidth / 620, window.innerHeight / 700, 1);
+  gameContainer.style.transform = `scale(${s})`;
+  // Collapse layout space so flexbox centers the visual size correctly
+  gameContainer.style.marginLeft = ((620 * s) - 620) / 2 + 'px';
+  gameContainer.style.marginTop  = ((700 * s) - 700) / 2 + 'px';
 }
 window.addEventListener('resize', scaleGame);
 scaleGame();
@@ -552,9 +555,14 @@ const menuPanel = document.getElementById('menuPanel');
 const hsPanel   = document.getElementById('hsPanel');
 const hud       = document.getElementById('hud');
 
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('hsBtn').addEventListener('click', showHS);
-document.getElementById('hsBackBtn').addEventListener('click', () => {
+function onBtn(id, fn) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', fn);
+  el.addEventListener('touchend', e => { e.preventDefault(); fn(); });
+}
+onBtn('startBtn', startGame);
+onBtn('hsBtn', showHS);
+onBtn('hsBackBtn', () => {
   hsPanel.style.display = 'none';
   menuPanel.style.display = 'flex';
 });
@@ -628,9 +636,9 @@ function showGameOver() {
   `;
   menuPanel.style.display = 'flex';
 
-  document.getElementById('restartBtn').addEventListener('click', startGame);
-  document.getElementById('hsBtn2').addEventListener('click', showHS);
-  document.getElementById('menuBtn2').addEventListener('click', goMenu);
+  onBtn('restartBtn', startGame);
+  onBtn('hsBtn2', showHS);
+  onBtn('menuBtn2', goMenu);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
