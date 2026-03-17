@@ -199,6 +199,17 @@ canvas { display:block; }
   transform: translate(-50%, -50%);
 }
 
+#control-label {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #0af6;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 #fire-btn {
   position: absolute;
   right: 50px; top: 50%;
@@ -217,10 +228,6 @@ canvas { display:block; }
 }
 #fire-btn:active { background: radial-gradient(circle at 40% 40%, #600, #300); box-shadow: 0 0 40px #f44a; }
 
-/* Show bar immediately on any touch/stylus device */
-@media (hover: none) and (pointer: coarse) {
-  #mobile-controls { display: block; }
-}
 </style>
 </head>
 <body>
@@ -291,6 +298,7 @@ canvas { display:block; }
     <div id="joystick-base"></div>
     <div id="joystick-dot"></div>
   </div>
+  <div id="control-label">Control Plane</div>
   <div id="fire-btn">FIRE</div>
 </div>
 
@@ -303,12 +311,11 @@ const gameWrap = document.getElementById('game-wrap');
 const mobileControls = document.getElementById('mobile-controls');
 const BAR_HEIGHT = 110;
 
-// Layer 1: eager detection on page load
+// Detect touch capability on page load (bar hidden on menu, shown during gameplay)
 let isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-if (isTouchDevice) mobileControls.style.display = 'block';
 
 function scaleGame() {
-  const barH = isTouchDevice ? BAR_HEIGHT : 0;
+  const barH = (mobileControls.style.display === 'block') ? BAR_HEIGHT : 0;
   const availH = window.innerHeight - barH;
   const s = Math.min(window.innerWidth / 620, availH / 700, 1);
   gameContainer.style.transform = `scale(${s})`;
@@ -321,11 +328,10 @@ function scaleGame() {
 window.addEventListener('resize', scaleGame);
 scaleGame();
 
-// Layer 3: touchstart fallback (covers DevTools emulation + edge cases) + audio unlock
+// Touchstart fallback: detect touch capability + unlock audio
 window.addEventListener('touchstart', () => {
   if (!isTouchDevice) {
     isTouchDevice = true;
-    mobileControls.style.display = 'block';
     scaleGame();
   }
   initAudio();
@@ -611,12 +617,19 @@ function showHS() {
   }
 }
 
+function showBar(show) {
+  if (!isTouchDevice) return;
+  mobileControls.style.display = show ? 'block' : 'none';
+  scaleGame();
+}
+
 function goMenu() {
   state = 'menu';
   overlay.style.display = 'flex';
   menuPanel.style.display = 'flex';
   hsPanel.style.display = 'none';
   hud.style.display = 'none';
+  showBar(false);
   requestAnimationFrame(menuLoop);
 }
 
@@ -630,6 +643,7 @@ function startGame() {
   banner = { text:'', sub:'', timer:0, color:'#0af' };
   overlay.style.display = 'none';
   hud.style.display = 'block';
+  showBar(true);
   startMusic();
   requestAnimationFrame(loop);
 }
@@ -641,6 +655,7 @@ function showGameOver() {
   const isRecord = hs[0].score === entry.score && hs.filter(e=>e.score===entry.score).length === 1;
 
   hud.style.display = 'none';
+  showBar(false);
   overlay.style.display = 'flex';
   menuPanel.style.display = 'none';
 
