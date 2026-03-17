@@ -10,10 +10,19 @@ body {
   background:#000;
   overflow:hidden;
   width:100vw; height:100vh;
-  display:flex; justify-content:center; align-items:center;
+  display:flex; flex-direction:column;
   font-family:'Courier New',monospace; color:#fff;
 }
 canvas { display:block; }
+
+#game-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
 
 #game-container {
   position:relative;
@@ -70,7 +79,7 @@ canvas { display:block; }
 #menuPanel::after  { bottom:-1px; right:-1px; border-width:0 2px 2px 0; }
 
 .menu-title {
-  font-size:clamp(28px,6vw,48px); font-weight:bold; letter-spacing:6px;
+  font-size:40px; font-weight:bold; letter-spacing:6px;
   background:linear-gradient(180deg,#fff 0%,#0af 60%,#06f 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   background-clip:text;
@@ -88,12 +97,12 @@ canvas { display:block; }
   margin:4px 0;
 }
 .menu-info {
-  font-size:clamp(11px,2.5vw,13px); color:#7ae; line-height:1.7; text-align:center;
+  font-size:13px; color:#7ae; line-height:1.7; text-align:center;
 }
 .menu-info b { color:#fff; }
 .unlock-grid {
   display:grid; grid-template-columns:auto 1fr;
-  gap:4px 14px; font-size:clamp(10px,2.2vw,12px); color:#5c8; text-align:left;
+  gap:4px 14px; font-size:12px; color:#5c8; text-align:left;
   background:#0af1; padding:8px 14px; border-left:2px solid #0af4;
   width:100%;
 }
@@ -150,131 +159,134 @@ canvas { display:block; }
 .new-record  { font-size:14px; color:#f0f; text-shadow:0 0 10px #f0f; letter-spacing:2px; animation:pulse 0.6s infinite alternate; }
 @keyframes pulse { from{opacity:0.6} to{opacity:1} }
 
-/* ── TOUCH CONTROLS ── */
-#touch-controls {
-  position:absolute; inset:0;
-  display:none;
-  pointer-events:none;
-  z-index:8;
+/* ── MOBILE CONTROLS BAR ── */
+#mobile-controls {
+  display: none;
+  height: 110px;
+  background: linear-gradient(0deg, #000, #0008);
+  border-top: 1px solid #0af2;
+  flex-shrink: 0;
+  position: relative;
 }
-/* Left half: joystick interaction zone */
-#joystick-zone {
-  position:absolute;
-  left:0; top:0; width:50%; height:100%;
-  pointer-events:auto;
+
+#joystick-area {
+  position: absolute;
+  left: 0; top: 0; width: 55%; height: 100%;
+  touch-action: none;
 }
-/* Visible joystick: outer ring fixed bottom-left */
+
 #joystick-base {
-  position:absolute;
-  bottom:40px; left:60px;
-  width:110px; height:110px;
-  border-radius:50%;
-  border:2px solid #0af4;
-  background:#0af08;
-  box-shadow:0 0 20px #0af2;
-  pointer-events:none;
-  transform:translate(-50%, 0);
+  position: absolute;
+  left: 85px; top: 50%;
+  width: 80px; height: 80px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid #0af4;
+  background: #0af08;
+  box-shadow: 0 0 15px #0af2;
+  pointer-events: none;
 }
-/* Inner stick dot */
+
 #joystick-dot {
-  position:absolute;
-  width:44px; height:44px;
-  border-radius:50%;
-  background:radial-gradient(circle at 35% 35%, #4df, #0af);
-  box-shadow:0 0 16px #0af, 0 0 32px #0af6;
-  border:2px solid #0af;
-  pointer-events:none;
-  /* default: centered on base */
-  left:60px; top:calc(100% - 95px);
-  transform:translate(-50%, -50%);
-  transition:left 0.04s, top 0.04s;
+  position: absolute;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #4df, #0af);
+  box-shadow: 0 0 12px #0af;
+  border: 2px solid #0af;
+  pointer-events: none;
+  left: 85px; top: 50%;
+  transform: translate(-50%, -50%);
 }
-/* Right: fire button */
+
 #fire-btn {
-  position:absolute;
-  right:60px; bottom:60px;
-  width:90px; height:90px;
-  border-radius:50%;
-  border:2px solid #f44;
-  color:#f44;
-  display:flex; align-items:center; justify-content:center;
-  font-size:13px; font-weight:bold; letter-spacing:2px;
-  pointer-events:auto;
-  background:radial-gradient(circle at 40% 40%, #3a0000, #1a0000);
-  text-shadow:0 0 10px #f44;
-  box-shadow:0 0 24px #f444, inset 0 0 20px #f441;
-  user-select:none; -webkit-user-select:none;
-  touch-action:manipulation;
+  position: absolute;
+  right: 50px; top: 50%;
+  transform: translateY(-50%);
+  width: 75px; height: 75px;
+  border-radius: 50%;
+  border: 2px solid #f44;
+  color: #f44;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: bold; letter-spacing: 2px;
+  background: radial-gradient(circle at 40% 40%, #3a0000, #1a0000);
+  text-shadow: 0 0 10px #f44;
+  box-shadow: 0 0 20px #f444;
+  touch-action: manipulation;
+  user-select: none;
 }
-#fire-btn:active { background:radial-gradient(circle at 40% 40%, #600, #300); box-shadow:0 0 40px #f44a; }
+#fire-btn:active { background: radial-gradient(circle at 40% 40%, #600, #300); box-shadow: 0 0 40px #f44a; }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-  <canvas id="canvas"></canvas>
+<div id="game-wrap">
+  <div id="game-container">
+    <canvas id="canvas"></canvas>
 
-  <!-- HUD (only shown while playing) -->
-  <div id="hud">
-    <div id="hudTop">
-      <div>
-        <div class="hud-block">SCORE <b id="scoreDisplay">0</b></div>
-        <div class="hud-block" style="font-size:13px;color:#8cf">TIME <b id="timeDisplay">0s</b> &nbsp; LV <b id="levelDisplay">1</b></div>
+    <!-- HUD (only shown while playing) -->
+    <div id="hud">
+      <div id="hudTop">
+        <div>
+          <div class="hud-block">SCORE <b id="scoreDisplay">0</b></div>
+          <div class="hud-block" style="font-size:13px;color:#8cf">TIME <b id="timeDisplay">0s</b> &nbsp; LV <b id="levelDisplay">1</b></div>
+        </div>
+        <div>
+          <div class="hud-block" style="text-align:center">LIVES <b id="livesDisplay">♥♥♥</b></div>
+        </div>
+        <div style="text-align:right">
+          <div class="hud-block" style="font-size:12px;color:#0af8">FIRE CHARGES</div>
+          <div id="chargesDisplay"></div>
+          <div id="weaponLabel">— no weapon —</div>
+        </div>
       </div>
-      <div>
-        <div class="hud-block" style="text-align:center">LIVES <b id="livesDisplay">♥♥♥</b></div>
+    </div>
+
+    <!-- MUSIC TOGGLE -->
+    <button id="musicBtn">♪ MUSIC: ON</button>
+
+    <!-- OVERLAYS -->
+    <div id="overlay">
+      <!-- MAIN MENU -->
+      <div id="menuPanel">
+        <div class="menu-title">SPACE DODGER</div>
+        <div class="menu-sub">★ survival edition ★</div>
+        <div class="divider"></div>
+        <div class="menu-info">
+          <b>Arrow keys / WASD</b> — move<br>
+          <b>SPACE</b> — fire (costs 1 charge)<br>
+          Dodge meteors to earn fire charges
+        </div>
+        <div class="unlock-grid">
+          <span class="lv">LV 3</span><span>Laser shot unlocked</span>
+          <span class="lv">LV 5</span><span>3-way spread shot</span>
+          <span class="lv">LV 8</span><span>Plasma cannon</span>
+          <span class="lv">LV 6+</span><span>Fire meteors appear</span>
+        </div>
+        <div class="divider"></div>
+        <button class="btn" id="startBtn">▶ START GAME</button>
+        <button class="btn gold" id="hsBtn">★ HIGH SCORES</button>
       </div>
-      <div style="text-align:right">
-        <div class="hud-block" style="font-size:12px;color:#0af8">FIRE CHARGES</div>
-        <div id="chargesDisplay"></div>
-        <div id="weaponLabel">— no weapon —</div>
+
+      <!-- HIGH SCORE PANEL (hidden by default) -->
+      <div id="hsPanel">
+        <h2>★ HIGH SCORES ★</h2>
+        <div class="divider" style="width:240px"></div>
+        <div id="hsList"></div>
+        <div class="divider" style="width:240px"></div>
+        <button class="btn sm gold" id="hsBackBtn">← BACK</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- MUSIC TOGGLE -->
-  <button id="musicBtn">♪ MUSIC: ON</button>
-
-  <!-- OVERLAYS -->
-  <div id="overlay">
-    <!-- MAIN MENU -->
-    <div id="menuPanel">
-      <div class="menu-title">SPACE DODGER</div>
-      <div class="menu-sub">★ survival edition ★</div>
-      <div class="divider"></div>
-      <div class="menu-info">
-        <b>Arrow keys / WASD</b> — move<br>
-        <b>SPACE</b> — fire (costs 1 charge)<br>
-        Dodge meteors to earn fire charges
-      </div>
-      <div class="unlock-grid">
-        <span class="lv">LV 3</span><span>Laser shot unlocked</span>
-        <span class="lv">LV 5</span><span>3-way spread shot</span>
-        <span class="lv">LV 8</span><span>Plasma cannon</span>
-        <span class="lv">LV 6+</span><span>Fire meteors appear</span>
-      </div>
-      <div class="divider"></div>
-      <button class="btn" id="startBtn">▶ START GAME</button>
-      <button class="btn gold" id="hsBtn">★ HIGH SCORES</button>
-    </div>
-
-    <!-- HIGH SCORE PANEL (hidden by default) -->
-    <div id="hsPanel">
-      <h2>★ HIGH SCORES ★</h2>
-      <div class="divider" style="width:240px"></div>
-      <div id="hsList"></div>
-      <div class="divider" style="width:240px"></div>
-      <button class="btn sm gold" id="hsBackBtn">← BACK</button>
-    </div>
-  </div>
-
-  <!-- TOUCH CONTROLS -->
-  <div id="touch-controls">
-    <div id="joystick-zone"></div>
+<!-- MOBILE CONTROLS BAR (outside scaled container) -->
+<div id="mobile-controls">
+  <div id="joystick-area">
     <div id="joystick-base"></div>
     <div id="joystick-dot"></div>
-    <div id="fire-btn">FIRE</div>
   </div>
+  <div id="fire-btn">FIRE</div>
 </div>
 
 <script>
@@ -282,16 +294,22 @@ canvas { display:block; }
 //  RESPONSIVE SCALING
 // ══════════════════════════════════════════════════════════════════════════════
 const gameContainer = document.getElementById('game-container');
+const BAR_HEIGHT = 110;
+let isTouchDevice = false;
 
 function scaleGame() {
-  const s = Math.min(window.innerWidth / 620, window.innerHeight / 700, 1);
+  const barH = isTouchDevice ? BAR_HEIGHT : 0;
+  const s = Math.min(window.innerWidth / 620, (window.innerHeight - barH) / 700, 1);
   gameContainer.style.transform = `scale(${s})`;
-  // Collapse layout space so flexbox centers the visual size correctly
-  gameContainer.style.marginLeft = ((620 * s) - 620) / 2 + 'px';
-  gameContainer.style.marginTop  = ((700 * s) - 700) / 2 + 'px';
 }
 window.addEventListener('resize', scaleGame);
 scaleGame();
+
+window.addEventListener('touchstart', () => {
+  isTouchDevice = true;
+  document.getElementById('mobile-controls').style.display = 'block';
+  scaleGame();
+}, { once: true });
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  CANVAS & CONSTANTS
@@ -486,79 +504,49 @@ document.addEventListener('keyup', e => { keys[e.key] = false; });
 // ══════════════════════════════════════════════════════════════════════════════
 const touchKeys = { left:false, right:false, up:false, down:false };
 let joystickActive = false, joystickStartX = 0, joystickStartY = 0;
-const JOYSTICK_DEAD = 15, JOYSTICK_MAX = 60;
+const JOY_DEAD = 12, JOY_RADIUS = 32;
+const JOY_BASE_X = 85, JOY_BASE_Y = BAR_HEIGHT / 2;
 
-const touchControls = document.getElementById('touch-controls');
-const joystickZone  = document.getElementById('joystick-zone');
-const joystickBase  = document.getElementById('joystick-base');
-const joystickDot   = document.getElementById('joystick-dot');
-const fireBtnEl     = document.getElementById('fire-btn');
+const joystickArea = document.getElementById('joystick-area');
+const joystickDot  = document.getElementById('joystick-dot');
+const fireBtnEl    = document.getElementById('fire-btn');
 
-// Base center in game coords
-const BASE_CX = 60, BASE_CY_FROM_BOTTOM = 95; // center of base circle
-const JOYSTICK_RADIUS = 38;
-
-let isTouchDevice = false;
-window.addEventListener('touchstart', () => { isTouchDevice = true; }, { once:true });
-
-function getGamePos(touch) {
-  const rect  = gameContainer.getBoundingClientRect();
-  const scaleMatch = gameContainer.style.transform.match(/scale\(([^)]+)\)/);
-  const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-  return {
-    x: (touch.clientX - rect.left) / scale,
-    y: (touch.clientY - rect.top)  / scale
-  };
-}
-
-function updateDotPos(dx, dy) {
-  const len = Math.sqrt(dx*dx + dy*dy);
-  const clamped = len > JOYSTICK_RADIUS ? JOYSTICK_RADIUS / len : 1;
-  const cx = dx * clamped;
-  const cy = dy * clamped;
-  const baseCY = H - BASE_CY_FROM_BOTTOM;
-  joystickDot.style.left = (BASE_CX + cx) + 'px';
-  joystickDot.style.top  = (baseCY + cy) + 'px';
-}
-
-function resetDot() {
-  joystickDot.style.left = BASE_CX + 'px';
-  joystickDot.style.top  = (H - BASE_CY_FROM_BOTTOM) + 'px';
-}
-
-joystickZone.addEventListener('touchstart', e => {
+joystickArea.addEventListener('touchstart', e => {
   e.preventDefault();
   initAudio();
-  const pos = getGamePos(e.changedTouches[0]);
   joystickActive = true;
-  joystickStartX = pos.x; joystickStartY = pos.y;
-}, { passive:false });
+  joystickStartX = e.changedTouches[0].clientX;
+  joystickStartY = e.changedTouches[0].clientY;
+}, { passive: false });
 
-joystickZone.addEventListener('touchmove', e => {
+joystickArea.addEventListener('touchmove', e => {
   e.preventDefault();
   if (!joystickActive) return;
-  const pos = getGamePos(e.changedTouches[0]);
-  const dx = pos.x - joystickStartX;
-  const dy = pos.y - joystickStartY;
-  touchKeys.left  = dx < -JOYSTICK_DEAD;
-  touchKeys.right = dx >  JOYSTICK_DEAD;
-  touchKeys.up    = dy < -JOYSTICK_DEAD;
-  touchKeys.down  = dy >  JOYSTICK_DEAD;
-  updateDotPos(dx, dy);
-}, { passive:false });
+  const dx = e.changedTouches[0].clientX - joystickStartX;
+  const dy = e.changedTouches[0].clientY - joystickStartY;
+  touchKeys.left  = dx < -JOY_DEAD;
+  touchKeys.right = dx >  JOY_DEAD;
+  touchKeys.up    = dy < -JOY_DEAD;
+  touchKeys.down  = dy >  JOY_DEAD;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const c = len > JOY_RADIUS ? JOY_RADIUS / len : 1;
+  joystickDot.style.left = (JOY_BASE_X + dx*c) + 'px';
+  joystickDot.style.top  = (JOY_BASE_Y + dy*c) + 'px';
+}, { passive: false });
 
-joystickZone.addEventListener('touchend', e => {
+joystickArea.addEventListener('touchend', e => {
   e.preventDefault();
   joystickActive = false;
   touchKeys.left = touchKeys.right = touchKeys.up = touchKeys.down = false;
-  resetDot();
-}, { passive:false });
+  joystickDot.style.left = JOY_BASE_X + 'px';
+  joystickDot.style.top  = JOY_BASE_Y + 'px';
+}, { passive: false });
 
 fireBtnEl.addEventListener('touchstart', e => {
   e.preventDefault();
   initAudio();
   justPressed[' '] = true;
-}, { passive:false });
+}, { passive: false });
 
 // Tap on overlay/dead states to go to menu
 document.getElementById('overlay').addEventListener('touchstart', e => {
@@ -609,7 +597,6 @@ function goMenu() {
   menuPanel.style.display = 'flex';
   hsPanel.style.display = 'none';
   hud.style.display = 'none';
-  touchControls.style.display = 'none';
   requestAnimationFrame(menuLoop);
 }
 
@@ -623,7 +610,6 @@ function startGame() {
   banner = { text:'', sub:'', timer:0, color:'#0af' };
   overlay.style.display = 'none';
   hud.style.display = 'block';
-  if (isTouchDevice) { touchControls.style.display = 'block'; resetDot(); }
   startMusic();
   requestAnimationFrame(loop);
 }
@@ -635,7 +621,6 @@ function showGameOver() {
   const isRecord = hs[0].score === entry.score && hs.filter(e=>e.score===entry.score).length === 1;
 
   hud.style.display = 'none';
-  touchControls.style.display = 'none';
   overlay.style.display = 'flex';
   menuPanel.style.display = 'none';
 
