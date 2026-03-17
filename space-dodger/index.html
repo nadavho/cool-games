@@ -9,17 +9,14 @@
 body {
   background:#000;
   overflow:hidden;
-  width:100vw;
-  height: 100vh;
-  height: 100dvh;
-  display:flex; flex-direction:column;
+  width:100vw; height:100vh;
   font-family:'Courier New',monospace; color:#fff;
 }
 canvas { display:block; }
 
 #game-wrap {
-  flex: 1;
-  min-height: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -163,12 +160,13 @@ canvas { display:block; }
 
 /* ── MOBILE CONTROLS BAR ── */
 #mobile-controls {
-  display: none;   /* shown via media query on touch devices */
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
   height: 110px;
   background: linear-gradient(0deg, #000, #0008);
   border-top: 1px solid #0af2;
-  flex-shrink: 0;
-  position: relative;
+  z-index: 10;
 }
 
 #joystick-area {
@@ -301,21 +299,37 @@ canvas { display:block; }
 //  RESPONSIVE SCALING
 // ══════════════════════════════════════════════════════════════════════════════
 const gameContainer = document.getElementById('game-container');
+const gameWrap = document.getElementById('game-wrap');
+const mobileControls = document.getElementById('mobile-controls');
 const BAR_HEIGHT = 110;
 
-// Detect touch capability immediately on load — don't wait for first touch
-const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+// Layer 1: eager detection on page load
+let isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (isTouchDevice) mobileControls.style.display = 'block';
 
 function scaleGame() {
   const barH = isTouchDevice ? BAR_HEIGHT : 0;
-  const s = Math.min(window.innerWidth / 620, (window.innerHeight - barH) / 700, 1);
+  const availH = window.innerHeight - barH;
+  const s = Math.min(window.innerWidth / 620, availH / 700, 1);
   gameContainer.style.transform = `scale(${s})`;
+  // Collapse layout box to match visual size (CSS transform doesn't affect layout)
+  gameContainer.style.marginLeft = ((620 * s) - 620) / 2 + 'px';
+  gameContainer.style.marginTop  = ((700 * s) - 700) / 2 + 'px';
+  // Size game-wrap to available space above bar
+  gameWrap.style.height = availH + 'px';
 }
 window.addEventListener('resize', scaleGame);
 scaleGame();
 
-// Keep touchstart listener only to unlock AudioContext (requires user gesture)
-window.addEventListener('touchstart', () => { initAudio(); }, { once: true });
+// Layer 3: touchstart fallback (covers DevTools emulation + edge cases) + audio unlock
+window.addEventListener('touchstart', () => {
+  if (!isTouchDevice) {
+    isTouchDevice = true;
+    mobileControls.style.display = 'block';
+    scaleGame();
+  }
+  initAudio();
+}, { once: true });
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  CANVAS & CONSTANTS
