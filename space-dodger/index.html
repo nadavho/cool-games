@@ -319,13 +319,34 @@ let isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
 function scaleGame() {
   const barH = (mobileControls.style.display === 'block') ? BAR_HEIGHT : 0;
+  const availW = window.innerWidth;
   const availH = window.innerHeight - barH;
-  const s = Math.min(window.innerWidth / 620, availH / 700, 1);
-  gameContainer.style.transform = `scale(${s})`;
-  // Collapse layout box to match visual size (CSS transform doesn't affect layout)
-  gameContainer.style.marginLeft = ((620 * s) - 620) / 2 + 'px';
-  gameContainer.style.marginTop  = ((700 * s) - 700) / 2 + 'px';
-  // Size game-wrap to available space above bar
+  const widthScale = availW / W;
+
+  // Width-constrained (mobile portrait): extend canvas height to fill vertical space
+  if (widthScale < 1 && widthScale < availH / 700) {
+    const s = widthScale;
+    const newH = Math.max(700, Math.round(availH / s));
+    if (newH !== H) {
+      H = newH;
+      canvas.height = H;
+      gameContainer.style.height = H + 'px';
+    }
+    gameContainer.style.transform = `scale(${s})`;
+    gameContainer.style.marginLeft = ((W * s) - W) / 2 + 'px';
+    gameContainer.style.marginTop  = ((H * s) - H) / 2 + 'px';
+  } else {
+    // Desktop / landscape: use default 700px height
+    if (H !== 700) {
+      H = 700;
+      canvas.height = 700;
+      gameContainer.style.height = '700px';
+    }
+    const s = Math.min(widthScale, availH / 700, 1);
+    gameContainer.style.transform = `scale(${s})`;
+    gameContainer.style.marginLeft = ((W * s) - W) / 2 + 'px';
+    gameContainer.style.marginTop  = ((700 * s) - 700) / 2 + 'px';
+  }
   gameWrap.style.height = availH + 'px';
 }
 window.addEventListener('resize', scaleGame);
@@ -346,7 +367,7 @@ window.addEventListener('touchstart', () => {
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
 const W = canvas.width  = 620;
-const H = canvas.height = 700;
+let   H = canvas.height = 700;
 
 const WEAPON_LASER  = 3;
 const WEAPON_SPREAD = 5;
