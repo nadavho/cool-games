@@ -165,7 +165,7 @@ canvas { display:block; }
   display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: 110px;
+  height: 80px;
   background: linear-gradient(0deg, #000, #0008);
   border-top: 1px solid #0af2;
   z-index: 10;
@@ -179,8 +179,8 @@ canvas { display:block; }
 
 #joystick-base {
   position: absolute;
-  left: 85px; top: 50%;
-  width: 80px; height: 80px;
+  left: 70px; top: 50%;
+  width: 64px; height: 64px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   border: 2px solid #0af4;
@@ -191,13 +191,13 @@ canvas { display:block; }
 
 #joystick-dot {
   position: absolute;
-  width: 36px; height: 36px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #4df, #0af);
   box-shadow: 0 0 12px #0af;
   border: 2px solid #0af;
   pointer-events: none;
-  left: 85px; top: 50%;
+  left: 70px; top: 50%;
   transform: translate(-50%, -50%);
 }
 
@@ -205,7 +205,7 @@ canvas { display:block; }
   position: absolute;
   left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 2px;
   color: #0af6;
   pointer-events: none;
@@ -214,9 +214,9 @@ canvas { display:block; }
 
 #fire-btn {
   position: absolute;
-  right: 50px; top: 50%;
+  right: 40px; top: 50%;
   transform: translateY(-50%);
-  width: 75px; height: 75px;
+  width: 62px; height: 62px;
   border-radius: 50%;
   border: 2px solid #f44;
   color: #f44;
@@ -312,7 +312,7 @@ canvas { display:block; }
 const gameContainer = document.getElementById('game-container');
 const gameWrap = document.getElementById('game-wrap');
 const mobileControls = document.getElementById('mobile-controls');
-const BAR_HEIGHT = 110;
+const BAR_HEIGHT = 80;
 
 // Detect touch capability on page load (bar hidden on menu, shown during gameplay)
 let isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -533,8 +533,8 @@ document.addEventListener('keyup', e => { keys[e.key] = false; });
 // ══════════════════════════════════════════════════════════════════════════════
 const touchKeys = { left:false, right:false, up:false, down:false };
 let joystickActive = false, joystickStartX = 0, joystickStartY = 0;
-const JOY_DEAD = 12, JOY_RADIUS = 32;
-const JOY_BASE_X = 85, JOY_BASE_Y = BAR_HEIGHT / 2;
+const JOY_DEAD = 12, JOY_RADIUS = 26;
+const JOY_BASE_X = 70, JOY_BASE_Y = BAR_HEIGHT / 2;
 
 const joystickArea = document.getElementById('joystick-area');
 const joystickDot  = document.getElementById('joystick-dot');
