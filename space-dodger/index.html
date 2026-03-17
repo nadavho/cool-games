@@ -483,9 +483,10 @@ const joystickIndicator = document.getElementById('joystick-indicator');
 const joystickDot     = document.getElementById('joystick-dot');
 const fireBtnEl       = document.getElementById('fire-btn');
 
-// Show touch controls on first touch
+// Detect touch device but don't show controls until game starts
+let isTouchDevice = false;
 window.addEventListener('touchstart', () => {
-  touchControls.style.display = 'block';
+  isTouchDevice = true;
 }, { once: true });
 
 function getTouchPos(touch, el) {
@@ -582,6 +583,7 @@ function goMenu() {
   menuPanel.style.display = 'flex';
   hsPanel.style.display = 'none';
   hud.style.display = 'none';
+  touchControls.style.display = 'none';
   requestAnimationFrame(menuLoop);
 }
 
@@ -595,6 +597,7 @@ function startGame() {
   banner = { text:'', sub:'', timer:0, color:'#0af' };
   overlay.style.display = 'none';
   hud.style.display = 'block';
+  if (isTouchDevice) touchControls.style.display = 'block';
   startMusic();
   requestAnimationFrame(loop);
 }
@@ -606,6 +609,7 @@ function showGameOver() {
   const isRecord = hs[0].score === entry.score && hs.filter(e=>e.score===entry.score).length === 1;
 
   hud.style.display = 'none';
+  touchControls.style.display = 'none';
   overlay.style.display = 'flex';
   menuPanel.style.display = 'none';
 
