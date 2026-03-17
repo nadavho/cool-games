@@ -9,7 +9,9 @@
 body {
   background:#000;
   overflow:hidden;
-  width:100vw; height:100vh;
+  width:100vw;
+  height: 100vh;
+  height: 100dvh;
   display:flex; flex-direction:column;
   font-family:'Courier New',monospace; color:#fff;
 }
@@ -161,7 +163,7 @@ canvas { display:block; }
 
 /* ── MOBILE CONTROLS BAR ── */
 #mobile-controls {
-  display: none;
+  display: none;   /* shown via media query on touch devices */
   height: 110px;
   background: linear-gradient(0deg, #000, #0008);
   border-top: 1px solid #0af2;
@@ -216,6 +218,11 @@ canvas { display:block; }
   user-select: none;
 }
 #fire-btn:active { background: radial-gradient(circle at 40% 40%, #600, #300); box-shadow: 0 0 40px #f44a; }
+
+/* Show bar immediately on any touch/stylus device */
+@media (hover: none) and (pointer: coarse) {
+  #mobile-controls { display: block; }
+}
 </style>
 </head>
 <body>
@@ -295,7 +302,9 @@ canvas { display:block; }
 // ══════════════════════════════════════════════════════════════════════════════
 const gameContainer = document.getElementById('game-container');
 const BAR_HEIGHT = 110;
-let isTouchDevice = false;
+
+// Detect touch capability immediately on load — don't wait for first touch
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
 function scaleGame() {
   const barH = isTouchDevice ? BAR_HEIGHT : 0;
@@ -305,11 +314,8 @@ function scaleGame() {
 window.addEventListener('resize', scaleGame);
 scaleGame();
 
-window.addEventListener('touchstart', () => {
-  isTouchDevice = true;
-  document.getElementById('mobile-controls').style.display = 'block';
-  scaleGame();
-}, { once: true });
+// Keep touchstart listener only to unlock AudioContext (requires user gesture)
+window.addEventListener('touchstart', () => { initAudio(); }, { once: true });
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  CANVAS & CONSTANTS
