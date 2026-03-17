@@ -312,6 +312,10 @@ canvas { display:block; }
 const gameContainer = document.getElementById('game-container');
 const gameWrap = document.getElementById('game-wrap');
 const mobileControls = document.getElementById('mobile-controls');
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width  = 620;
+let   H = canvas.height = 700;
 const BAR_HEIGHT = 80;
 
 // Detect touch capability on page load (bar hidden on menu, shown during gameplay)
@@ -362,13 +366,8 @@ window.addEventListener('touchstart', () => {
 }, { once: true });
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  CANVAS & CONSTANTS
+//  GAME CONSTANTS
 // ══════════════════════════════════════════════════════════════════════════════
-const canvas = document.getElementById('canvas');
-const ctx    = canvas.getContext('2d');
-const W = canvas.width  = 620;
-let   H = canvas.height = 700;
-
 const WEAPON_LASER  = 3;
 const WEAPON_SPREAD = 5;
 const WEAPON_PLASMA = 8;
