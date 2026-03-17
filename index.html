@@ -172,6 +172,23 @@ main {
   border:1px solid #fa04; padding:3px 8px;
 }
 
+/* ── COMING SOON BANNER ── */
+.coming-soon-banner {
+  margin-top:48px;
+  text-align:center;
+  font-size:14px;
+  letter-spacing:6px;
+  color:#fa0;
+  text-shadow:0 0 16px #fa08;
+  border:1px solid #fa04;
+  padding:16px;
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:0.6; }
+  50%      { opacity:1; }
+}
+
 /* ── FOOTER ── */
 footer {
   position:relative; z-index:1;
@@ -226,21 +243,10 @@ body::after {
       <span class="card-play">▶ PLAY NOW</span>
     </a>
 
-    <!-- COMING SOON PLACEHOLDER -->
-    <div class="card soon">
-      <span class="soon-label">COMING SOON</span>
-      <span class="card-badge badge-action">ACTION</span>
-      <div class="card-title">??? GAME</div>
-      <div class="card-desc">
-        The next game is in development.<br>
-        Stay tuned.
-      </div>
-      <div class="card-tags">
-        <span class="tag">???</span>
-      </div>
-      <span class="card-play">▶ PLAY NOW</span>
-    </div>
+  </div>
 
+  <div class="coming-soon-banner">
+    ⚡ MORE GAMES COMING SOON ⚡
   </div>
 </main>
 
