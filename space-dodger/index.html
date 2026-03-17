@@ -56,9 +56,9 @@ canvas { display:block; }
   background:linear-gradient(160deg,#04081a 0%,#0a0520 60%,#08102a 100%);
   border:1px solid #0af4;
   box-shadow:0 0 60px #0af3, inset 0 0 40px #0004;
-  padding:38px 50px 34px;
-  display:flex; flex-direction:column; align-items:center; gap:16px;
-  min-width:320px; max-width:90%;
+  padding:clamp(16px,4%,38px) clamp(16px,6%,50px) clamp(14px,3%,34px);
+  display:flex; flex-direction:column; align-items:center; gap:clamp(8px,2%,16px);
+  width:90%; max-width:520px;
 }
 /* corner decorations */
 #menuPanel::before, #menuPanel::after {
@@ -88,13 +88,13 @@ canvas { display:block; }
   margin:4px 0;
 }
 .menu-info {
-  font-size:13px; color:#7ae; line-height:1.9; text-align:center;
+  font-size:clamp(11px,2.5vw,13px); color:#7ae; line-height:1.7; text-align:center;
 }
 .menu-info b { color:#fff; }
 .unlock-grid {
   display:grid; grid-template-columns:auto 1fr;
-  gap:4px 14px; font-size:12px; color:#5c8; text-align:left;
-  background:#0af1; padding:10px 16px; border-left:2px solid #0af4;
+  gap:4px 14px; font-size:clamp(10px,2.2vw,12px); color:#5c8; text-align:left;
+  background:#0af1; padding:8px 14px; border-left:2px solid #0af4;
   width:100%;
 }
 .unlock-grid .lv { color:#ff8; font-weight:bold; }
@@ -157,48 +157,56 @@ canvas { display:block; }
   pointer-events:none;
   z-index:8;
 }
+/* Left half: joystick interaction zone */
 #joystick-zone {
   position:absolute;
-  left:0; top:0; width:60%; height:100%;
+  left:0; top:0; width:50%; height:100%;
   pointer-events:auto;
 }
-#fire-btn {
+/* Visible joystick: outer ring fixed bottom-left */
+#joystick-base {
   position:absolute;
-  right:24px; bottom:90px;
-  width:80px; height:80px;
+  bottom:40px; left:60px;
+  width:110px; height:110px;
   border-radius:50%;
-  border:2px solid #0af;
-  color:#0af;
-  display:flex; align-items:center; justify-content:center;
-  font-size:12px; letter-spacing:2px;
-  pointer-events:auto;
-  background:#0af1;
-  text-shadow:0 0 8px #0af;
-  box-shadow:0 0 20px #0af4;
-  user-select:none;
-  -webkit-user-select:none;
-}
-#joystick-indicator {
-  position:absolute;
-  width:70px; height:70px;
-  border-radius:50%;
-  border:2px solid #0af5;
+  border:2px solid #0af4;
   background:#0af08;
+  box-shadow:0 0 20px #0af2;
   pointer-events:none;
-  display:none;
-  transform:translate(-50%,-50%);
+  transform:translate(-50%, 0);
 }
+/* Inner stick dot */
 #joystick-dot {
   position:absolute;
-  width:24px; height:24px;
+  width:44px; height:44px;
   border-radius:50%;
-  background:#0af;
-  box-shadow:0 0 10px #0af;
+  background:radial-gradient(circle at 35% 35%, #4df, #0af);
+  box-shadow:0 0 16px #0af, 0 0 32px #0af6;
+  border:2px solid #0af;
   pointer-events:none;
-  transform:translate(-50%,-50%);
-  left:50%; top:50%;
-  transition:left 0.05s, top 0.05s;
+  /* default: centered on base */
+  left:60px; top:calc(100% - 95px);
+  transform:translate(-50%, -50%);
+  transition:left 0.04s, top 0.04s;
 }
+/* Right: fire button */
+#fire-btn {
+  position:absolute;
+  right:60px; bottom:60px;
+  width:90px; height:90px;
+  border-radius:50%;
+  border:2px solid #f44;
+  color:#f44;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:bold; letter-spacing:2px;
+  pointer-events:auto;
+  background:radial-gradient(circle at 40% 40%, #3a0000, #1a0000);
+  text-shadow:0 0 10px #f44;
+  box-shadow:0 0 24px #f444, inset 0 0 20px #f441;
+  user-select:none; -webkit-user-select:none;
+  touch-action:manipulation;
+}
+#fire-btn:active { background:radial-gradient(circle at 40% 40%, #600, #300); box-shadow:0 0 40px #f44a; }
 </style>
 </head>
 <body>
@@ -262,9 +270,9 @@ canvas { display:block; }
 
   <!-- TOUCH CONTROLS -->
   <div id="touch-controls">
-    <div id="joystick-zone">
-      <div id="joystick-indicator"><div id="joystick-dot"></div></div>
-    </div>
+    <div id="joystick-zone"></div>
+    <div id="joystick-base"></div>
+    <div id="joystick-dot"></div>
     <div id="fire-btn">FIRE</div>
   </div>
 </div>
@@ -480,60 +488,70 @@ const touchKeys = { left:false, right:false, up:false, down:false };
 let joystickActive = false, joystickStartX = 0, joystickStartY = 0;
 const JOYSTICK_DEAD = 15, JOYSTICK_MAX = 60;
 
-const touchControls   = document.getElementById('touch-controls');
-const joystickZone    = document.getElementById('joystick-zone');
-const joystickIndicator = document.getElementById('joystick-indicator');
-const joystickDot     = document.getElementById('joystick-dot');
-const fireBtnEl       = document.getElementById('fire-btn');
+const touchControls = document.getElementById('touch-controls');
+const joystickZone  = document.getElementById('joystick-zone');
+const joystickBase  = document.getElementById('joystick-base');
+const joystickDot   = document.getElementById('joystick-dot');
+const fireBtnEl     = document.getElementById('fire-btn');
 
-// Detect touch device but don't show controls until game starts
+// Base center in game coords
+const BASE_CX = 60, BASE_CY_FROM_BOTTOM = 95; // center of base circle
+const JOYSTICK_RADIUS = 38;
+
 let isTouchDevice = false;
-window.addEventListener('touchstart', () => {
-  isTouchDevice = true;
-}, { once: true });
+window.addEventListener('touchstart', () => { isTouchDevice = true; }, { once:true });
 
-function getTouchPos(touch, el) {
-  const rect  = el.getBoundingClientRect();
-  const scale = parseFloat(gameContainer.style.transform.replace('scale(','')) || 1;
+function getGamePos(touch) {
+  const rect  = gameContainer.getBoundingClientRect();
+  const scaleMatch = gameContainer.style.transform.match(/scale\(([^)]+)\)/);
+  const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
   return {
     x: (touch.clientX - rect.left) / scale,
     y: (touch.clientY - rect.top)  / scale
   };
 }
 
+function updateDotPos(dx, dy) {
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const clamped = len > JOYSTICK_RADIUS ? JOYSTICK_RADIUS / len : 1;
+  const cx = dx * clamped;
+  const cy = dy * clamped;
+  const baseCY = H - BASE_CY_FROM_BOTTOM;
+  joystickDot.style.left = (BASE_CX + cx) + 'px';
+  joystickDot.style.top  = (baseCY + cy) + 'px';
+}
+
+function resetDot() {
+  joystickDot.style.left = BASE_CX + 'px';
+  joystickDot.style.top  = (H - BASE_CY_FROM_BOTTOM) + 'px';
+}
+
 joystickZone.addEventListener('touchstart', e => {
   e.preventDefault();
   initAudio();
-  const pos = getTouchPos(e.changedTouches[0], joystickZone);
+  const pos = getGamePos(e.changedTouches[0]);
   joystickActive = true;
   joystickStartX = pos.x; joystickStartY = pos.y;
-  joystickIndicator.style.display = 'block';
-  joystickIndicator.style.left = pos.x + 'px';
-  joystickIndicator.style.top  = pos.y + 'px';
-  joystickDot.style.left = '50%'; joystickDot.style.top = '50%';
 }, { passive:false });
 
 joystickZone.addEventListener('touchmove', e => {
   e.preventDefault();
   if (!joystickActive) return;
-  const pos = getTouchPos(e.changedTouches[0], joystickZone);
+  const pos = getGamePos(e.changedTouches[0]);
   const dx = pos.x - joystickStartX;
   const dy = pos.y - joystickStartY;
   touchKeys.left  = dx < -JOYSTICK_DEAD;
   touchKeys.right = dx >  JOYSTICK_DEAD;
   touchKeys.up    = dy < -JOYSTICK_DEAD;
   touchKeys.down  = dy >  JOYSTICK_DEAD;
-  const cx = Math.max(-JOYSTICK_MAX, Math.min(JOYSTICK_MAX, dx));
-  const cy = Math.max(-JOYSTICK_MAX, Math.min(JOYSTICK_MAX, dy));
-  joystickDot.style.left = (50 + cx / JOYSTICK_MAX * 40) + '%';
-  joystickDot.style.top  = (50 + cy / JOYSTICK_MAX * 40) + '%';
+  updateDotPos(dx, dy);
 }, { passive:false });
 
 joystickZone.addEventListener('touchend', e => {
   e.preventDefault();
   joystickActive = false;
   touchKeys.left = touchKeys.right = touchKeys.up = touchKeys.down = false;
-  joystickIndicator.style.display = 'none';
+  resetDot();
 }, { passive:false });
 
 fireBtnEl.addEventListener('touchstart', e => {
@@ -605,7 +623,7 @@ function startGame() {
   banner = { text:'', sub:'', timer:0, color:'#0af' };
   overlay.style.display = 'none';
   hud.style.display = 'block';
-  if (isTouchDevice) touchControls.style.display = 'block';
+  if (isTouchDevice) { touchControls.style.display = 'block'; resetDot(); }
   startMusic();
   requestAnimationFrame(loop);
 }
