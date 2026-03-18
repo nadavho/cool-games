@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Wordle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #3b2d1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Press Start 2P', monospace;
+            image-rendering: pixelated;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                /* Dirt/grass pixel pattern */
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0px, transparent 32px,
+                    rgba(0,0,0,0.08) 32px, rgba(0,0,0,0.08) 64px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px, transparent 32px,
+                    rgba(0,0,0,0.08) 32px, rgba(0,0,0,0.08) 64px
+                );
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                /* Top grass band */
+                linear-gradient(
+                    180deg,
+                    #4a8c2a 0%, #3d7a22 3%, #5a9e34 5%, #4a8c2a 7%,
+                    /* Dirt layers */
+                    #8b6b3e 7%, #7a5c32 10%, #96774a 14%, #6e5028 18%,
+                    #8b6b3e 22%, #7a5c32 26%, #6e5028 30%, #96774a 34%,
+                    #8b6b3e 38%, #6e5028 42%,
+                    /* Stone transition */
+                    #6e6e6e 50%, #5a5a5a 54%, #787878 58%, #4e4e4e 62%,
+                    #6e6e6e 66%, #5a5a5a 70%, #787878 74%,
+                    /* Deep stone / coal spots */
+                    #4e4e4e 78%, #3a3a3a 82%, #5a5a5a 86%, #4e4e4e 90%,
+                    #2e2e2e 94%, #3a3a3a 100%
+                );
+            opacity: 0.85;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 4px solid #3a3a3a;
+            padding: 30px 40px;
+            image-rendering: pixelated;
+            box-shadow:
+                inset 0 0 0 2px #1a1a1a,
+                0 0 40px rgba(0, 0, 0, 0.7);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: #55ff55;
+            text-shadow:
+                3px 3px 0 #0a3a0a,
+                0 0 20px rgba(85, 255, 85, 0.3);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .progress {
+            font-size: 0.55rem;
+            color: #aaa;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .tries {
+            font-size: 0.55rem;
+            color: #ff6666;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .prompt {
+            font-size: 0.9rem;
+            color: #ffaa00;
+            text-shadow: 2px 2px 0 #553300;
+        }
+
+        .crafting-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 72px);
+            grid-template-rows: repeat(3, 72px);
+            gap: 2px;
+            background: #484848;
+            border: 4px solid #1a1a1a;
+            outline: 4px solid #636363;
+            padding: 4px;
+            box-shadow:
+                inset 2px 2px 0 #5a5a5a,
+                inset -2px -2px 0 #2a2a2a;
+        }
+
+        .slot {
+            width: 72px;
+            height: 72px;
+            background: #8b8b8b;
+            border: 3px solid;
+            border-color: #aaa #555 #555 #aaa;
+            cursor: pointer;
+            image-rendering: pixelated;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            user-select: none;
+        }
+
+        .slot:hover {
+            background: #9e9e78;
+            border-color: #c0c090 #606040 #606040 #c0c090;
+        }
+
+        .slot.drag-over {
+            background: #a0a050;
+            border-color: #ffdd00 #887700 #887700 #ffdd00;
+            box-shadow: inset 0 0 8px rgba(255, 221, 0, 0.4);
+        }
+
+        .slot.correct {
+            background: #3a7a2a;
+            border-color: #5abf3a #2a5e1a #2a5e1a #5abf3a;
+        }
+
+        .slot.wrong-pos {
+            background: #8a7a20;
+            border-color: #c0b030 #605a10 #605a10 #c0b030;
+        }
+
+        .slot.wrong {
+            background: #7a2a2a;
+            border-color: #bf3a3a #5e1a1a #5e1a1a #bf3a3a;
+        }
+
+        .item-palette {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .item-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 4px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.45rem;
+            color: #fff;
+            background: #5a5a5a;
+            border: 3px solid;
+            border-color: #888 #333 #333 #888;
+            cursor: grab;
+            text-shadow: 1px 1px 0 #000;
+            user-select: none;
+        }
+
+        .item-btn:hover {
+            background: #6a6a5a;
+            border-color: #999 #444 #444 #999;
+        }
+
+        .item-btn:active {
+            cursor: grabbing;
+        }
+
+        .item-btn .item-emoji {
+            font-size: 1.4rem;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .check-btn, .next-btn, .play-again-btn {
+            padding: 14px 28px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.65rem;
+            color: #fff;
+            border: 4px solid;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+            image-rendering: pixelated;
+        }
+
+        .check-btn {
+            background: #3a8a2a;
+            border-color: #5abf3a #2a5e1a #2a5e1a #5abf3a;
+        }
+        .check-btn:hover { background: #4aa63a; }
+        .check-btn:active {
+            background: #2e7a20;
+            border-color: #2a5e1a #5abf3a #5abf3a #2a5e1a;
+        }
+
+        .next-btn {
+            background: #2a5a8a;
+            border-color: #3a8abf #1a3a5e #1a3a5e #3a8abf;
+        }
+        .next-btn:hover { background: #3a6aa6; }
+        .next-btn:active {
+            background: #1e4a7a;
+            border-color: #1a3a5e #3a8abf #3a8abf #1a3a5e;
+        }
+
+        .play-again-btn {
+            background: #8a5a2a;
+            border-color: #bf8a3a #5e3a1a #5e3a1a #bf8a3a;
+        }
+        .play-again-btn:hover { background: #a66a3a; }
+
+        .hidden { display: none !important; }
+
+        .score {
+            font-size: 0.8rem;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .score span {
+            color: #55ff55;
+        }
+
+        .finish-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            z-index: 100;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .finish-overlay h2 {
+            font-size: 1.6rem;
+            color: #ffaa00;
+            text-shadow: 3px 3px 0 #553300;
+        }
+
+        .finish-overlay .final-score {
+            font-size: 1.2rem;
+            color: #55ff55;
+            text-shadow: 2px 2px 0 #0a3a0a;
+        }
+
+        .finish-overlay .final-msg {
+            font-size: 0.6rem;
+            color: #ccc;
+            text-shadow: 1px 1px 0 #000;
+            text-align: center;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minecraft Wordle</h1>
+        <p class="progress" id="progress">Recipe 1 / 20</p>
+        <p class="tries" id="tries">Tries: 5 / 5</p>
+        <p class="prompt" id="prompt">Craft: ???</p>
+        <div class="crafting-grid" id="grid">
+            <div class="slot" data-index="0"></div>
+            <div class="slot" data-index="1"></div>
+            <div class="slot" data-index="2"></div>
+            <div class="slot" data-index="3"></div>
+            <div class="slot" data-index="4"></div>
+            <div class="slot" data-index="5"></div>
+            <div class="slot" data-index="6"></div>
+            <div class="slot" data-index="7"></div>
+            <div class="slot" data-index="8"></div>
+        </div>
+        <div class="item-palette" id="palette"></div>
+        <div class="btn-row">
+            <button class="check-btn" id="checkBtn">Check Recipe</button>
+            <button class="next-btn hidden" id="nextBtn">Next Recipe</button>
+        </div>
+        <p class="score">Score: <span id="scoreDisplay">0</span></p>
+    </div>
+
+    <div class="finish-overlay hidden" id="finishOverlay">
+        <h2>Game Over!</h2>
+        <p class="final-score" id="finalScore">0 / 180</p>
+        <p class="final-msg" id="finalMsg">Thanks for playing!</p>
+        <button class="play-again-btn" onclick="startGame()">Play Again</button>
+    </div>
+
+    <script>
+        const items = [
+            { id: "empty",            name: "Empty",            emoji: "",   desc: "An empty crafting slot" },
+            { id: "oak_planks",       name: "Oak Planks",       emoji: "🟫", desc: "Basic building block made from logs" },
+            { id: "stick",            name: "Stick",            emoji: "🥢", desc: "Simple craft used in many recipes" },
+            { id: "cobblestone",      name: "Cobblestone",      emoji: "🧱", desc: "Dropped when mining stone" },
+            { id: "iron_ingot",       name: "Iron Ingot",       emoji: "🔩", desc: "Smelted iron ore, very versatile" },
+            { id: "gold_ingot",       name: "Gold Ingot",       emoji: "🥇", desc: "Shiny but not very durable" },
+            { id: "diamond",          name: "Diamond",          emoji: "💎", desc: "The most prized mineral" },
+            { id: "redstone",         name: "Redstone",         emoji: "🔴", desc: "Powers contraptions and circuits" },
+            { id: "string",           name: "String",           emoji: "🧵", desc: "Dropped by spiders" },
+            { id: "feather",          name: "Feather",          emoji: "🪶", desc: "Dropped by chickens" },
+            { id: "flint",            name: "Flint",            emoji: "🔘", desc: "Found when mining gravel" },
+            { id: "leather",          name: "Leather",          emoji: "🟤", desc: "Dropped by cows" },
+            { id: "paper",            name: "Paper",            emoji: "📄", desc: "Made from sugar cane" },
+            { id: "sugar_cane",       name: "Sugar Cane",       emoji: "🎋", desc: "Grows near water, used for paper" },
+            { id: "wheat",            name: "Wheat",            emoji: "🌾", desc: "Grown from seeds, used for bread" },
+            { id: "egg",              name: "Egg",              emoji: "🥚", desc: "Laid by chickens" },
+            { id: "milk_bucket",      name: "Milk Bucket",      emoji: "🥛", desc: "Obtained by milking a cow" },
+            { id: "sugar",            name: "Sugar",            emoji: "🍬", desc: "Crafted from sugar cane" },
+            { id: "gunpowder",        name: "Gunpowder",        emoji: "💥", desc: "Dropped by creepers" },
+            { id: "sand",             name: "Sand",             emoji: "🟡", desc: "Falls with gravity, smelts into glass" },
+            { id: "glass",            name: "Glass",            emoji: "🪟", desc: "Transparent block from smelted sand" },
+            { id: "obsidian",         name: "Obsidian",         emoji: "🖤", desc: "Formed when water meets lava" },
+            { id: "ender_pearl",      name: "Ender Pearl",      emoji: "🟢", desc: "Dropped by endermen, used to teleport" },
+            { id: "blaze_powder",     name: "Blaze Powder",     emoji: "🔶", desc: "Crafted from blaze rods" },
+            { id: "bone",             name: "Bone",             emoji: "🦴", desc: "Dropped by skeletons" },
+            { id: "coal",             name: "Coal",             emoji: "⚫", desc: "Fuel source found underground" },
+            { id: "stone",            name: "Stone",            emoji: "🪨", desc: "Obtained by smelting cobblestone" },
+            { id: "wool",             name: "Wool",             emoji: "🐑", desc: "Sheared from sheep" },
+            { id: "book",             name: "Book",             emoji: "📖", desc: "Used for enchanting and bookshelves" },
+            { id: "blaze_rod",        name: "Blaze Rod",        emoji: "🪄", desc: "Dropped by blazes in the Nether" },
+            { id: "iron_ore",         name: "Iron Ore",         emoji: "⬜", desc: "Found underground, smelt for ingots" },
+            { id: "oak_log",          name: "Oak Log",          emoji: "🪵", desc: "Chopped from oak trees" },
+            { id: "glass_bottle",     name: "Glass Bottle",     emoji: "🧪", desc: "Used to hold potions" },
+            { id: "nether_wart",      name: "Nether Wart",      emoji: "🍄", desc: "Base ingredient for brewing potions" },
+            { id: "slime_ball",       name: "Slime Ball",       emoji: "🟩", desc: "Dropped by slimes" },
+            { id: "glowstone_dust",   name: "Glowstone Dust",   emoji: "✨", desc: "Dropped from glowstone blocks" },
+            { id: "lapis_lazuli",     name: "Lapis Lazuli",     emoji: "🔵", desc: "Blue dye used for enchanting" },
+            { id: "emerald",          name: "Emerald",          emoji: "💚", desc: "Currency for villager trading" },
+        ];
+
+        const recipes = [
+            {
+                name: "Wooden Pickaxe", emoji: "⛏️",
+                grid: ["oak_planks","oak_planks","oak_planks", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Wooden Sword", emoji: "🗡️",
+                grid: ["empty","oak_planks","empty", "empty","oak_planks","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Wooden Axe", emoji: "🪓",
+                grid: ["oak_planks","oak_planks","empty", "oak_planks","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Wooden Shovel", emoji: "🥄",
+                grid: ["empty","oak_planks","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Wooden Hoe", emoji: "🌱",
+                grid: ["oak_planks","oak_planks","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Stone Pickaxe", emoji: "⛏️",
+                grid: ["cobblestone","cobblestone","cobblestone", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Iron Pickaxe", emoji: "⛏️",
+                grid: ["iron_ingot","iron_ingot","iron_ingot", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Diamond Sword", emoji: "🗡️",
+                grid: ["empty","diamond","empty", "empty","diamond","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Crafting Table", emoji: "🔨",
+                grid: ["oak_planks","oak_planks","empty", "oak_planks","oak_planks","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Furnace", emoji: "🔥",
+                grid: ["cobblestone","cobblestone","cobblestone", "cobblestone","empty","cobblestone", "cobblestone","cobblestone","cobblestone"]
+            },
+            {
+                name: "Chest", emoji: "📦",
+                grid: ["oak_planks","oak_planks","oak_planks", "oak_planks","empty","oak_planks", "oak_planks","oak_planks","oak_planks"]
+            },
+            {
+                name: "Stick", emoji: "🥢",
+                grid: ["empty","oak_planks","empty", "empty","oak_planks","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Torch", emoji: "🔦",
+                grid: ["empty","coal","empty", "empty","stick","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Bow", emoji: "🏹",
+                grid: ["empty","stick","string", "stick","empty","string", "empty","stick","string"]
+            },
+            {
+                name: "Arrow", emoji: "➡️",
+                grid: ["empty","flint","empty", "empty","stick","empty", "empty","feather","empty"]
+            },
+            {
+                name: "Paper", emoji: "📄",
+                grid: ["empty","empty","empty", "sugar_cane","sugar_cane","sugar_cane", "empty","empty","empty"]
+            },
+            {
+                name: "Book", emoji: "📖",
+                grid: ["paper","empty","empty", "paper","empty","empty", "paper","leather","empty"]
+            },
+            {
+                name: "TNT", emoji: "🧨",
+                grid: ["gunpowder","sand","gunpowder", "sand","gunpowder","sand", "gunpowder","sand","gunpowder"]
+            },
+            {
+                name: "Bucket", emoji: "🪣",
+                grid: ["empty","empty","empty", "iron_ingot","empty","iron_ingot", "empty","iron_ingot","empty"]
+            },
+            {
+                name: "Cake", emoji: "🎂",
+                grid: ["milk_bucket","milk_bucket","milk_bucket", "sugar","egg","sugar", "wheat","wheat","wheat"]
+            },
+            {
+                name: "Diamond Pickaxe", emoji: "⛏️",
+                grid: ["diamond","diamond","diamond", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Diamond Axe", emoji: "🪓",
+                grid: ["diamond","diamond","empty", "diamond","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Diamond Shovel", emoji: "🥄",
+                grid: ["empty","diamond","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Diamond Hoe", emoji: "🌱",
+                grid: ["diamond","diamond","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Iron Sword", emoji: "🗡️",
+                grid: ["empty","iron_ingot","empty", "empty","iron_ingot","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Iron Axe", emoji: "🪓",
+                grid: ["iron_ingot","iron_ingot","empty", "iron_ingot","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Iron Shovel", emoji: "🥄",
+                grid: ["empty","iron_ingot","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Iron Hoe", emoji: "🌱",
+                grid: ["iron_ingot","iron_ingot","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Gold Sword", emoji: "🗡️",
+                grid: ["empty","gold_ingot","empty", "empty","gold_ingot","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Gold Pickaxe", emoji: "⛏️",
+                grid: ["gold_ingot","gold_ingot","gold_ingot", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Stone Sword", emoji: "🗡️",
+                grid: ["empty","cobblestone","empty", "empty","cobblestone","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Stone Axe", emoji: "🪓",
+                grid: ["cobblestone","cobblestone","empty", "cobblestone","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Stone Hoe", emoji: "🌱",
+                grid: ["cobblestone","cobblestone","empty", "empty","stick","empty", "empty","stick","empty"]
+            },
+            {
+                name: "Bookshelf", emoji: "📚",
+                grid: ["oak_planks","oak_planks","oak_planks", "book","book","book", "oak_planks","oak_planks","oak_planks"]
+            },
+            {
+                name: "Ladder", emoji: "🪜",
+                grid: ["stick","empty","stick", "stick","stick","stick", "stick","empty","stick"]
+            },
+            {
+                name: "Bread", emoji: "🍞",
+                grid: ["empty","empty","empty", "wheat","wheat","wheat", "empty","empty","empty"]
+            },
+            {
+                name: "Bone Meal", emoji: "🦴",
+                grid: ["empty","bone","empty", "empty","empty","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Sugar", emoji: "🍬",
+                grid: ["empty","sugar_cane","empty", "empty","empty","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Glass Bottle", emoji: "🧪",
+                grid: ["empty","empty","empty", "glass","empty","glass", "empty","glass","empty"]
+            },
+            {
+                name: "Eye of Ender", emoji: "👁️",
+                grid: ["empty","empty","empty", "empty","blaze_powder","empty", "empty","ender_pearl","empty"]
+            },
+            {
+                name: "Oak Planks", emoji: "🟫",
+                grid: ["empty","oak_log","empty", "empty","empty","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Fishing Rod", emoji: "🎣",
+                grid: ["empty","empty","stick", "empty","stick","string", "stick","empty","string"]
+            },
+            {
+                name: "Iron Helmet", emoji: "⛑️",
+                grid: ["iron_ingot","iron_ingot","iron_ingot", "iron_ingot","empty","iron_ingot", "empty","empty","empty"]
+            },
+            {
+                name: "Iron Chestplate", emoji: "🦺",
+                grid: ["iron_ingot","empty","iron_ingot", "iron_ingot","iron_ingot","iron_ingot", "iron_ingot","iron_ingot","iron_ingot"]
+            },
+            {
+                name: "Iron Leggings", emoji: "👖",
+                grid: ["iron_ingot","iron_ingot","iron_ingot", "iron_ingot","empty","iron_ingot", "iron_ingot","empty","iron_ingot"]
+            },
+            {
+                name: "Iron Boots", emoji: "👢",
+                grid: ["empty","empty","empty", "iron_ingot","empty","iron_ingot", "iron_ingot","empty","iron_ingot"]
+            },
+            {
+                name: "Shield", emoji: "🛡️",
+                grid: ["oak_planks","iron_ingot","oak_planks", "oak_planks","oak_planks","oak_planks", "empty","oak_planks","empty"]
+            },
+            {
+                name: "Piston", emoji: "⬆️",
+                grid: ["oak_planks","oak_planks","oak_planks", "cobblestone","iron_ingot","cobblestone", "cobblestone","redstone","cobblestone"]
+            },
+            {
+                name: "Redstone Torch", emoji: "🔴",
+                grid: ["empty","redstone","empty", "empty","stick","empty", "empty","empty","empty"]
+            },
+            {
+                name: "Slime Block", emoji: "🟩",
+                grid: ["slime_ball","slime_ball","slime_ball", "slime_ball","slime_ball","slime_ball", "slime_ball","slime_ball","slime_ball"]
+            },
+        ];
+
+        // Helpers
+        const itemMap = {};
+        items.forEach(item => itemMap[item.id] = item);
+
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        // DOM refs
+        const gridEl = document.getElementById('grid');
+        const paletteEl = document.getElementById('palette');
+        const promptEl = document.getElementById('prompt');
+        const progressEl = document.getElementById('progress');
+        const checkBtn = document.getElementById('checkBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const triesEl = document.getElementById('tries');
+        const finishOverlay = document.getElementById('finishOverlay');
+        const finalScore = document.getElementById('finalScore');
+        const finalMsg = document.getElementById('finalMsg');
+        const slots = gridEl.querySelectorAll('.slot');
+
+        // Game state
+        let shuffledRecipes = [];
+        let currentRecipeIndex = 0;
+        let score = 0;
+        let gridState = Array(9).fill("empty");
+        let checked = false;
+        let triesLeft = 5;
+        const MAX_TRIES = 5;
+        let paletteChoices = [];
+        let dragItemId = null;
+        let dragSourceSlot = null; // index if dragging from a grid slot, null if from palette
+
+        // --- Game flow ---
+
+        function startGame() {
+            shuffledRecipes = shuffle(recipes);
+            currentRecipeIndex = 0;
+            score = 0;
+            scoreDisplay.textContent = '0';
+            finishOverlay.classList.add('hidden');
+            loadRecipe(0);
+        }
+
+        function loadRecipe(index) {
+            currentRecipeIndex = index;
+            const recipe = shuffledRecipes[index];
+
+            // Hide recipe name — show ???
+            promptEl.textContent = `Craft: ???`;
+            progressEl.textContent = `Recipe ${index + 1} / ${shuffledRecipes.length}`;
+
+            gridState = Array(9).fill("empty");
+            checked = false;
+            triesLeft = MAX_TRIES;
+            triesEl.textContent = `Tries: ${triesLeft} / ${MAX_TRIES}`;
+
+            // Reset slots
+            slots.forEach(slot => {
+                slot.textContent = '';
+                slot.className = 'slot';
+            });
+
+            // Build palette: unique recipe items + distractors = 9 choices
+            const recipeItemIds = [...new Set(recipe.grid.filter(id => id !== "empty"))];
+            const nonRecipeItems = items.filter(i => i.id !== "empty" && !recipeItemIds.includes(i.id));
+            const distractors = shuffle(nonRecipeItems).slice(0, 8 - recipeItemIds.length);
+            paletteChoices = shuffle([
+                ...recipeItemIds,
+                ...distractors.map(i => i.id),
+                "empty"
+            ]);
+
+            renderPalette();
+
+            checkBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+        }
+
+        function renderPalette() {
+            paletteEl.innerHTML = '';
+            paletteChoices.forEach(id => {
+                const item = itemMap[id];
+                const btn = document.createElement('div');
+                btn.className = 'item-btn';
+                btn.draggable = true;
+                btn.dataset.itemId = id;
+                btn.innerHTML = `<span class="item-emoji">${item.emoji || '❌'}</span>${item.id === 'empty' ? 'Empty' : item.name}`;
+
+                // Drag start from palette
+                btn.addEventListener('dragstart', (e) => {
+                    if (checked) { e.preventDefault(); return; }
+                    dragItemId = id;
+                    dragSourceSlot = null;
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                // Also keep click-to-place as fallback
+                btn.addEventListener('click', () => onItemClick(id));
+
+                paletteEl.appendChild(btn);
+            });
+        }
+
+        // --- Slot drag & drop + click ---
+
+        slots.forEach((slot, i) => {
+            // Make filled slots draggable
+            slot.addEventListener('dragstart', (e) => {
+                if (checked) { e.preventDefault(); return; }
+                if (gridState[i] === "empty") { e.preventDefault(); return; }
+                dragItemId = gridState[i];
+                dragSourceSlot = i;
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            slot.addEventListener('dragover', (e) => {
+                if (checked) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                slot.classList.add('drag-over');
+            });
+
+            slot.addEventListener('dragleave', () => {
+                slot.classList.remove('drag-over');
+            });
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                if (checked || dragItemId === null) return;
+
+                // If dragging from another slot, swap
+                if (dragSourceSlot !== null && dragSourceSlot !== i) {
+                    const temp = gridState[i];
+                    gridState[i] = gridState[dragSourceSlot];
+                    gridState[dragSourceSlot] = temp;
+                    renderSlot(dragSourceSlot);
+                    renderSlot(i);
+                } else if (dragSourceSlot === null) {
+                    // Dragging from palette — place in slot
+                    gridState[i] = dragItemId;
+                    renderSlot(i);
+                }
+
+                dragItemId = null;
+                dragSourceSlot = null;
+            });
+
+            // Click to clear slot
+            slot.addEventListener('click', () => {
+                if (checked) return;
+                if (gridState[i] !== "empty") {
+                    gridState[i] = "empty";
+                    renderSlot(i);
+                }
+            });
+        });
+
+        // Allow dropping back on palette to remove from slot
+        paletteEl.addEventListener('dragover', (e) => {
+            if (checked) return;
+            if (dragSourceSlot !== null) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            }
+        });
+
+        paletteEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (checked || dragSourceSlot === null) return;
+            gridState[dragSourceSlot] = "empty";
+            renderSlot(dragSourceSlot);
+            dragItemId = null;
+            dragSourceSlot = null;
+        });
+
+        // Clear drag state if drag ends without drop
+        document.addEventListener('dragend', () => {
+            dragItemId = null;
+            dragSourceSlot = null;
+            slots.forEach(s => s.classList.remove('drag-over'));
+        });
+
+        // Click-to-place fallback (for palette items)
+        function onItemClick(itemId) {
+            if (checked) return;
+            const target = gridState.indexOf("empty");
+            if (target === -1) return;
+            gridState[target] = itemId;
+            renderSlot(target);
+        }
+
+        function renderSlot(index) {
+            const id = gridState[index];
+            const item = itemMap[id];
+            const slot = slots[index];
+            slot.textContent = item ? (item.emoji || '') : '';
+            // Make filled slots draggable
+            slot.draggable = (id !== "empty");
+        }
+
+        // --- Check ---
+
+        checkBtn.addEventListener('click', checkRecipe);
+        nextBtn.addEventListener('click', nextRecipe);
+
+        function checkRecipe() {
+            if (checked) return;
+
+            const recipe = shuffledRecipes[currentRecipeIndex];
+            let correctCount = 0;
+
+            for (let i = 0; i < 9; i++) {
+                const player = gridState[i];
+                const answer = recipe.grid[i];
+
+                slots[i].classList.remove('drag-over', 'correct', 'wrong-pos', 'wrong');
+
+                // Empty slots stay grey — no feedback
+                if (player === "empty" && answer === "empty") {
+                    correctCount++;
+                } else if (player === "empty") {
+                    // Player left it empty but answer has an item — stay grey
+                } else if (player === answer) {
+                    slots[i].classList.add('correct');
+                    correctCount++;
+                } else if (recipe.grid.includes(player)) {
+                    slots[i].classList.add('wrong-pos');
+                } else {
+                    slots[i].classList.add('wrong');
+                }
+            }
+
+            triesLeft--;
+            triesEl.textContent = `Tries: ${triesLeft} / ${MAX_TRIES}`;
+
+            // Perfect — award points, reveal name, move on
+            if (correctCount === 9) {
+                checked = true;
+                score += correctCount;
+                scoreDisplay.textContent = score;
+                promptEl.textContent = `Craft: ${recipe.emoji} ${recipe.name}`;
+                checkBtn.classList.add('hidden');
+                if (currentRecipeIndex < shuffledRecipes.length - 1) {
+                    nextBtn.classList.remove('hidden');
+                } else {
+                    showFinish();
+                }
+                return;
+            }
+
+            // Out of tries — award partial, reveal name, move on
+            if (triesLeft <= 0) {
+                checked = true;
+                score += correctCount;
+                scoreDisplay.textContent = score;
+                promptEl.textContent = `It was: ${recipe.emoji} ${recipe.name}`;
+                checkBtn.classList.add('hidden');
+                if (currentRecipeIndex < shuffledRecipes.length - 1) {
+                    nextBtn.classList.remove('hidden');
+                } else {
+                    showFinish();
+                }
+                return;
+            }
+
+            // Still have tries — show feedback briefly, then retry
+            checked = true;
+            setTimeout(() => {
+                checked = false;
+                slots.forEach(slot => {
+                    slot.classList.remove('correct', 'wrong-pos', 'wrong');
+                });
+            }, 1200);
+        }
+
+        function nextRecipe() {
+            loadRecipe(currentRecipeIndex + 1);
+        }
+
+        function showFinish() {
+            const maxScore = shuffledRecipes.length * 9;
+            finalScore.textContent = `${score} / ${maxScore}`;
+
+            const pct = score / maxScore;
+            if (pct === 1) finalMsg.textContent = "Perfect! You are a crafting master!";
+            else if (pct >= 0.8) finalMsg.textContent = "Amazing! You really know your recipes!";
+            else if (pct >= 0.6) finalMsg.textContent = "Good job! Keep practicing!";
+            else if (pct >= 0.4) finalMsg.textContent = "Not bad! Try again to improve!";
+            else finalMsg.textContent = "Time to study the Minecraft wiki!";
+
+            finishOverlay.classList.remove('hidden');
+        }
+
+        // Start on load
+        startGame();
+    </script>
+</body>
+</html>
