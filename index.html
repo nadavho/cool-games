@@ -28,6 +28,22 @@ header {
   padding:60px 20px 30px;
 }
 
+.title-row {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+}
+
+.site-logo {
+  width:clamp(48px, 8vw, 80px);
+  height:clamp(48px, 8vw, 80px);
+  border-radius:50%;
+  border:3px solid #0af;
+  box-shadow:0 0 20px #0af66, 0 0 40px #0af33;
+  object-fit:cover;
+}
+
 .site-title {
   font-size:clamp(36px, 7vw, 72px);
   font-weight:bold;
@@ -218,7 +234,10 @@ body::after {
 <canvas id="bg"></canvas>
 
 <header>
-  <div class="site-title">AHGAMING CENTER</div>
+  <div class="title-row">
+    <img class="site-logo" src="logo.jpg" alt="AHGaming Logo">
+    <div class="site-title">AHGAMING CENTER</div>
+  </div>
   <div class="site-sub">★ &nbsp; arcade collection &nbsp; ★</div>
   <div class="divider"></div>
 </header>
